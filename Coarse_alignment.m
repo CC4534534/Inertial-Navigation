@@ -106,7 +106,7 @@ C_ib0i = C1\C2;
 
 %% get C_bn
 C_bn = C_en*C_ie*C_ib0i*C_bib0; %3-by-3
-%% �����̬  
+%% 轉換後的角度
 Theta = asind(C_bn(3,2));   
 Gamma = atand(-C_bn(3,1)/C_bn(3,3));   %P252 9.2.41
 Psi = -atand(C_bn(1,2)/C_bn(2,2));
@@ -137,7 +137,7 @@ if C_bn(3,3)<0
     end
 end
 
-% 
+% 轉換後的角度誤差
 real_Psi = 1+5*cos(t*2*pi/7+pi/3);
 real_Theta =1+ 7*cos(t*2*pi/5+pi/4);
 real_Gamma =1+ 10*cos(t*2*pi/6+pi/7);
