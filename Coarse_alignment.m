@@ -1,38 +1,42 @@
-function [Psi,Theta,Gamma] = Coarse_alignment(Wibb0,Fibb0,t,kk)
-%% COARSE ALIGNMENT ´Ö¶Ô×¼·ÂÕæ³ÌĞò
-% ÍÓÂİÊä³öµÄ½ÇÔöÁ¿Öµ[Gyro_x Gyro_y Gyro_z]¼°¼ÓËÙ¶È¼ÆµÄËÙ¶ÈÔöÁ¿[acc_x; acc_y; acc_z]
-% ¶Ô×¼µÄº¬ÒåÔÚÓÚ£ºÈ·¶¨ÔËÔØÌå¶Ô×¼½áÊøÄÇÒ»¿ÌµÄ×ËÌ¬½Ç¡£²¢ÇÒÒÔÕâ¸ö×ËÌ¬½Ç×÷ÎªÖ®ºó×ËÌ¬½âËãµÄ³õÊ¼Ìõ¼ş
-% Òò´ËÔÚÕû¸öµ¼º½¹ı³ÌÖĞÆğ×Å·Ç³£ÖØÒªµÄ×÷ÓÃ¡£
-%%
-% 
-% # ËùÑ¡ÊµÑéµØµãµÄ×ø±ê£º
-% ±±Î³39.959198¡ã£¨Î³¶È£© ¶«¾­116.311¡ã£¨¾­¶È£©  33.0m £¨º£°Î¸ß¶È£©
-% # µØÇò²ÎÊı£º
-% Wie=7.2921151467e-5rad/s    (µØÇò×Ô×ª½ÇËÙ¶È)
-% Re=6378393.0m              £¨µØÇò°ë¾¶£©
-% f=1/298.257                 (µØÇò±âÂÊ)
-% g0=9.7803267714            £¨ÖØÁ¦¼ÓËÙ¶ÈÏµÊı£© £¨ÓÃÓÚÇóÈ¡ÖØÁ¦¼ÓËÙ¶È£©
-%
+%% COARSE ALIGNMENT Simulation ç²—å°æº–æ¨¡æ“¬
+% Increment of Angular rate [Gyro_x Gyro_y Gyro_z] Increment of Acceleration [acc_x; acc_y; acc_z]
+clc;clear
+%% 1. Parameter setting
+% æŒ‡å®šæ–‡ä»¶è·¯å¾‘
+filePath = 'D:\simulation\IMU_Simulation\data\Simulated_IMU.txt';
 
-%% 1. ²ÎÊıÉèÖÃ¼°Êı¾İµ¼Èë
+% ä½¿ç”¨ readtable è®€å–æ–‡ä»¶
+data = readtable(filePath, 'Delimiter', '\t', 'ReadVariableNames', false);
+
+% å°‡æ•¸æ“šè½‰æ›ç‚ºæ•¸å€¼çŸ©é™£
+IMU_data = table2array(data);
+% æå–æ™‚é–“ (ç¬¬ä¸€åˆ—)
+time = IMU_data(:, 1);
+
+% æå–è§’é€Ÿåº¦ (ç¬¬äºŒåˆ°ç¬¬å››åˆ—)
+gyro_XYZ = IMU_data(:, 2:4); % [Gyro_X, Gyro_Y, Gyro_Z]
+
+% æå–åŠ é€Ÿåº¦ (ç¬¬äº”åˆ°ç¬¬ä¸ƒåˆ—)
+acc_XYZ = IMU_data(:, 5:7); % [Acc_X, Acc_Y, Acc_Z]
+
 % load IMU_real1;
-% Wibb0 = Wibb0(:,2:end);
-% Fibb0 = Fibb0(:,2:end);
-% t = 300;
+Wibb0 = IMU_data(:, 2:4)';
+Fibb0 = IMU_data(:, 5:7)';
+t = 200;
 
-L = 39.959198*pi/180;  %µ±µØÎ³¶È
-%lamda = 116.311*pi/180; %µ±µØ¾­¶È
-omega = 7.2921151467e-5;  %µØÇò×Ô×ª½ÇËÙ¶È
-g = 9.7803267714*(1+0.00193185138639*sin(L))/sqrt(1-0.00669437999013*sin(L)*sin(L)); %µ±µØÖØÁ¦¼ÓËÙ¶È£¬ºöÂÔh
-h = 0.0075; %¸üĞÂÖÜÆÚ
+L = 22.9998647916*pi/180;  %Local latitude
+%lamda = 116.311*pi/180; %Longtitude
+omega = 7.2921151467e-5;  %Earth angular rate
+g = 9.7803267714*(1+0.00193185138639*sin(L))/sqrt(1-0.00669437999013*sin(L)*sin(L)); %Local Gravatational Acceleration, ingnore h
+h = 0.01; %update frequency
 
 t1 = 0.5*t;
 t2 = t;
-long = length(Wibb0);  %È·¶¨t1 t2¶ÔÓ¦µÄ²ÉÑùµãÊıÄ¿
-long_t1 = ceil(long*t1/300);
-long_t2 = ceil(long*t2/300);
+long = length(Wibb0);  %confirm the correponding points of t1 and t2
+long_t1 = ceil(long*t1/t);
+long_t2 = ceil(long*t2/t);
 
-% ½«Êı¾İ³ËÒÔ²ÉÑù¼ä¸ô ±äÎªÔöÁ¿ĞÎÊ½
+% data * sampling interval, change to incremental
 Gyro = Wibb0(:,1:long_t2)*h;  %3-by-16000
 acc = Fibb0(:,1:long_t2)*h;
 
@@ -43,16 +47,16 @@ acc_x = acc(1,:);
 acc_y = acc(2,:);
 acc_z = acc(3,:);
 
-%% ÇóÈ¡C_en
+%% get C_en
 C_en = [0 1 0; -sin(L) 0 cos(L); cos(L) 0 sin(L)];
 
-%% ÇóÈ¡C_ie  
+%% get C_ie  
 theta = omega*t2;
 C_ie = [cos(theta) sin(theta) 0; 
     -sin(theta) cos(theta) 0; 
     0 0 1];
 
-%% ÇóÈ¡C_bib0 µ¥×ÓÑùËã·¨
+%% get C_bib0
 Q = [1 0 0 0]';
  V = [0 0 0]';
 for ii = 1:long_t2
@@ -65,13 +69,6 @@ for ii = 1:long_t2
     q2 = temp_y/mod*sin(mod/2);
     q3 = temp_z/mod*sin(mod/2);
     Q = [q0 -q1 -q2 -q3; q1 q0 q3 -q2; q2 -q3 q0 q1; q3 q2 -q1 q0]*Q; %(P269 9.3.40)
-%     Q0 = Q(1);
-%     Q1 = Q(2);
-%     Q2 = Q(3);
-%     Q3 = Q(4);
-%     Qmod = sqrt(Q0^2+Q1^2+Q2^2+Q3^2);
-%     Q = Q/Qmod;
-%     Q = (quatnormalize(Q'))'; %(P259 9.2.65)
     Q0 = Q(1);
     Q1 = Q(2);
     Q2 = Q(3);
@@ -79,12 +76,12 @@ for ii = 1:long_t2
     C_bib0 = [Q0^2+Q1^2-Q2^2-Q3^2 2*(Q1*Q2-Q0*Q3) 2*(Q1*Q3+Q0*Q2);
         2*(Q1*Q2+Q0*Q3) Q0^2-Q1^2+Q2^2-Q3^2 2*(Q2*Q3-Q0*Q1);
         2*(Q1*Q3-Q0*Q2) 2*(Q2*Q3+Q0*Q1) Q0^2-Q1^2-Q2^2+Q3^2]; %(P251 9.2.34)
-        
+
     V_x = acc_x(ii);
     V_y = acc_y(ii);
     V_z = acc_z(ii);
     V = V+C_bib0*[V_x; V_y; V_z];
-    
+
     if ii == long_t1
         V_t1 = V;
     end
@@ -107,19 +104,15 @@ C1 = [Vg_t1';
     cross(Vg_t1,Vg_t2)'];  %3-by-3
 C_ib0i = C1\C2;
 
-%% Çó½âC_bn
+%% get C_bn
 C_bn = C_en*C_ie*C_ib0i*C_bib0; %3-by-3
-%% Çó½â×ËÌ¬  
+%% ï¿½ï¿½ï¿½ï¿½ï¿½Ì¬  
 Theta = asind(C_bn(3,2));   
-Gamma = atand(-C_bn(3,1)/C_bn(3,3));   %£¨P252 9.2.41£©
+Gamma = atand(-C_bn(3,1)/C_bn(3,3));   %P252 9.2.41
 Psi = -atand(C_bn(1,2)/C_bn(2,2));
 
-%% ÕæÖµÅĞ¶Ï
-%%
-% 
-% * ×¢Òâ£º±¾ÊéPsi¹æ¶¨Îª ÈÆ-ZÖáĞı×ª(P6)£¬¶øÊµ¼ÊÖĞÄ¬ÈÏ ÈÆZÖáĞı×ª¡£
-% * Òò´Ë£¬Ïà²îÒ»¸ö¸ººÅ¡£
-% 
+%% get attitude
+%% true value decision
 
 if abs(C_bn(2,2))<10e-6  
     if C_bn(1,2)<0
@@ -128,8 +121,8 @@ if abs(C_bn(2,2))<10e-6
         Psi = -90;
     end
 else
-    if C_bn(2,2)<0  %cos(Psi)*cos(Theta) ²»±ä
-       if C_bn(1,2)<0  %sin(Psi)*cos(Theta) ±ä
+    if C_bn(2,2)<0  %cos(Psi)*cos(Theta)
+       if C_bn(1,2)<0  %sin(Psi)*cos(Theta)
            Psi = Psi+180;
        else
            Psi = Psi-180;
@@ -145,19 +138,11 @@ if C_bn(3,3)<0
 end
 
 % 
-real_Psi = 30+5*cos(t*2*pi/7+pi/3);
-real_Theta = 7*cos(t*2*pi/5+pi/4);
-real_Gamma = 10*cos(t*2*pi/6+pi/7);
+real_Psi = 1+5*cos(t*2*pi/7+pi/3);
+real_Theta =1+ 7*cos(t*2*pi/5+pi/4);
+real_Gamma =1+ 10*cos(t*2*pi/6+pi/7);
 
-Psi = Psi-real_Psi; 
-Theta = Theta-real_Theta; %Îó²îÖµ
-Gamma = Gamma-real_Gamma;
-
-
-
-
-
-
-
-
+Psi = Psi-real_Psi 
+Theta = Theta-real_Theta %error
+Gamma = Gamma-real_Gamma
 
