@@ -1,27 +1,22 @@
-function [Psi,Theta,Gamma] = Coarse_alignment(Wibb0,Fibb0,t,kk)
+function [Psi,Theta,Gamma] = Coarse_alignment(Wibb0,Fibb0,t)
 %% COARSE ALIGNMENT 
 %% 1. Parameter setting
-% load IMU_real1;
-% Wibb0 = Wibb0(:,2:end);
-% Fibb0 = Fibb0(:,2:end);
-% t = 300;
-
-L = 39.959198*pi/180;  %Local latitude
+L = 22.9998647916*pi/180;  %Local latitude from Chin-Hsin's /nspo-tc-insgnss/tasa-share/simulation demo data REF_Vehicle 
 omega = 7.2921151467e-5;  %Earth angular rate
-g = 9.7803267714*(1+0.00193185138639*sin(L))/sqrt(1-0.00669437999013*sin(L)*sin(L)); %Local Gravatational Acceleration, ingnore height
-h = 0.0075; %update frequency
+g = 9.7803253359*(1+0.001931852652*sin(L))/sqrt(1-0.0066943799901*sin(L)*sin(L)); %Local Gravatational Acceleration, ingnore height
+h = 0.01; %update frequency
 
 t1 = 0.5*t;
 t2 = t;
 long = length(Wibb0);  %confirm the correponding points of t1 and t2
-long_t1 = ceil(long*t1/300);
-long_t2 = ceil(long*t2/300);
+long_t1 = ceil(long*t1/t);
+long_t2 = ceil(long*t2/t);
 
 % data * sampling interval, change to incremental
-Gyro = Wibb0(:,1:long_t2)*h;  %3-by-16000
+Gyro = Wibb0(:,1:long_t2)*h;  %3 * (sampling interval*data)
 acc = Fibb0(:,1:long_t2)*h;
 
-Gyro_x = Gyro(1,:); %1-by-16000
+Gyro_x = Gyro(1,:); %1 * (sampling interval*data)
 Gyro_y = Gyro(2,:);
 Gyro_z = Gyro(3,:);
 acc_x = acc(1,:);
@@ -37,7 +32,7 @@ C_ie = [cos(theta) sin(theta) 0;
     -sin(theta) cos(theta) 0; 
     0 0 1];
 
-%%  get C_bib0
+%%  get C_bb0
 Q = [1 0 0 0]';
  V = [0 0 0]';
 for ii = 1:long_t2
@@ -49,26 +44,19 @@ for ii = 1:long_t2
     q1 = temp_x/mod*sin(mod/2);
     q2 = temp_y/mod*sin(mod/2);
     q3 = temp_z/mod*sin(mod/2);
-    Q = [q0 -q1 -q2 -q3; q1 q0 q3 -q2; q2 -q3 q0 q1; q3 q2 -q1 q0]*Q; %(P269 9.3.40)
-%     Q0 = Q(1);
-%     Q1 = Q(2);
-%     Q2 = Q(3);
-%     Q3 = Q(4);
-%     Qmod = sqrt(Q0^2+Q1^2+Q2^2+Q3^2);
-%     Q = Q/Qmod;
-%     Q = (quatnormalize(Q'))'; %(P259 9.2.65)
+    Q = [q0 -q1 -q2 -q3; q1 q0 q3 -q2; q2 -q3 q0 q1; q3 q2 -q1 q0]*Q;
     Q0 = Q(1);
     Q1 = Q(2);
     Q2 = Q(3);
     Q3 = Q(4);
-    C_bib0 = [Q0^2+Q1^2-Q2^2-Q3^2 2*(Q1*Q2-Q0*Q3) 2*(Q1*Q3+Q0*Q2);
+    C_bb0 = [Q0^2+Q1^2-Q2^2-Q3^2 2*(Q1*Q2-Q0*Q3) 2*(Q1*Q3+Q0*Q2);
         2*(Q1*Q2+Q0*Q3) Q0^2-Q1^2+Q2^2-Q3^2 2*(Q2*Q3-Q0*Q1);
-        2*(Q1*Q3-Q0*Q2) 2*(Q2*Q3+Q0*Q1) Q0^2-Q1^2-Q2^2+Q3^2]; %(P251 9.2.34)
+        2*(Q1*Q3-Q0*Q2) 2*(Q2*Q3+Q0*Q1) Q0^2-Q1^2-Q2^2+Q3^2];
         
     V_x = acc_x(ii);
     V_y = acc_y(ii);
     V_z = acc_z(ii);
-    V = V+C_bib0*[V_x; V_y; V_z];
+    V = V+C_bb0*[V_x; V_y; V_z];
     
     if ii == long_t1
         V_t1 = V;
@@ -89,14 +77,14 @@ Vg_t2 = [g*cos(L)*sin(omega*t2)/omega;
     g*sin(L)*t2];
 C1 = [Vg_t1';
     Vg_t2';
-    cross(Vg_t1,Vg_t2)'];  %3-by-3
+    cross(Vg_t1,Vg_t2)'];  %3*3
 C_ib0i = C1\C2;
 
 %% get C_bn
-C_bn = C_en*C_ie*C_ib0i*C_bib0; %3-by-3
+C_bn = C_en*C_ie*C_ib0i*C_bb0; %3*3
 %% 轉換後的角度
 Theta = asind(C_bn(3,2));   
-Gamma = atand(-C_bn(3,1)/C_bn(3,3));   %��P252 9.2.41��
+Gamma = atand(-C_bn(3,1)/C_bn(3,3));
 Psi = -atand(C_bn(1,2)/C_bn(2,2));
 
 %% get attitude
@@ -127,19 +115,10 @@ if C_bn(3,3)<0
 end
 
 % True value
-real_Psi = 30+5*cos(t*2*pi/7+pi/3);
-real_Theta = 7*cos(t*2*pi/5+pi/4);
-real_Gamma = 10*cos(t*2*pi/6+pi/7);
+real_Psi = 0;
+real_Theta = 0;
+real_Gamma = 0;
 
 Psi = Psi-real_Psi; 
 Theta = Theta-real_Theta; %error
 Gamma = Gamma-real_Gamma;
-
-
-
-
-
-
-
-
-

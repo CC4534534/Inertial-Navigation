@@ -1,39 +1,41 @@
 
-% main()函数，用来处理分割数据，调用对准函数
-% 注意：十个IMU_real数据文件 保存了十次测量结果，每一次测量时长均为300s
-% 因此对准仿真时刻t 在300s以内
-%误差在0.03°以内。
+clc;clear;
+% 指定文件路徑
+filePath = 'D:\simulation\IMU_Simulation\data\Simulated_IMU.txt';
 
-long = 40000;
-t = 300;
-n = long*10;
-Wibb0 = ones(3,n);
-Fibb0 = ones(3,n);
-for ii= 1:10
-    A = load (strcat('IMU_real',num2str(ii),'.mat'));
-    Wibb0(:,long*(ii-1)+1:long*ii) = A.Wibb0(:,2:end);
-    Fibb0(:,long*(ii-1)+1:long*ii) = A.Fibb0(:,2:end);
-end
-Sample = long/300*t;
-Sample_Wibb0 = ones(3,Sample);
-Sample_Fibb0 = ones(3,Sample);
-count = long*10/Sample;
-Psi = zeros(1,count);
-Theta = zeros(1,count);
-Gamma = zeros(1,count);
-for jj = 1:count
-    Sample_Wibb0 = Wibb0(:,Sample*(jj-1)+1:Sample*jj);
-    Sample_Fibb0 = Fibb0(:,Sample*(jj-1)+1:Sample*jj);
-    [Psi(jj),Theta(jj),Gamma(jj)] = Coarse_alignment(Sample_Wibb0,Sample_Fibb0,t);
-end
+% 使用 readtable 讀取文件
+data = readtable(filePath, 'Delimiter', '\t', 'ReadVariableNames', false);
 
-subplot(3,1,1);
-plot(Psi);
-title('Psi(n),航向角');
-subplot(3,1,2);
-plot(Theta);
-title('Theta(n)，俯仰角');
-subplot(3,1,3);
-plot(Gamma);
-title('Gamma(n)，横滚角');
+% 將數據轉換為數值矩陣
+IMU_data = table2array(data);
+
+% 提取時間 (第一列)
+time = IMU_data(:, 1);
+
+% 取前 250 秒的數據
+sampleRate = 0.01;  % IMU頻率100Hz
+align_time = 250;
+align_time_imudata = time + align_time;  % 對準時間為 250秒
+
+% 根據時間範圍過濾數據
+time_filter = time <= align_time_imudata;
+IMU_data_filtered = IMU_data(time_filter, :);
+
+% 提取樣本數量
+long = length(IMU_data_filtered);
+
+Gyro = ones(3, long);
+Acce = ones(3, long);
+Gyro(1,:) = IMU_data_filtered(:, 3);
+Gyro(2,:) = IMU_data_filtered(:, 2);
+Gyro(3,:) = IMU_data_filtered(:, 4);
+Acce(1,:) = IMU_data_filtered(:, 6);
+Acce(2,:) = IMU_data_filtered(:, 5);
+Acce(3,:) = IMU_data_filtered(:, 7);
+
+
+i = 1;
+[yaw(i),pitch(i),row(i)] = Coarse_alignment(Gyro,Acce,align_time)
+
+
 
