@@ -23,16 +23,16 @@ function Euler3212C = Euler3212C(q)
 end
 C_nb = Euler3212C(yaw_pitch_roll); %n frame to b frame;
 s_N = [1 0 0]';
-m_N = [0 0 1]';
+m_N = [0 0 -1]';
 s_B_true = C_nb*s_N
 rng('default'); %set random
-random = 0 + 0.001 * randn(3, 1); %mean=0, std=0.001
-% s_B = s_B_true+random;
-s_B = [0.8190 -0.5282 0.2242]';
+random = 0 + 0.01 * randn(3, 1); %mean=0, std=0.001
+s_B = s_B_true+random;
+% s_B = [0.8190 -0.5282 0.2242]';
 s_B = s_B/norm(s_B);
 m_B_true = C_nb * m_N
-% m_B = m_B_true+random;
-m_B = [-0.3138 -0.1548 0.9362]';
+m_B = m_B_true+random;
+% m_B = [0.3138 0.1548 -0.9362]';
 m_B = m_B/norm(m_B);
 % set T frame to solve C n frame to b frame
 t1_B = s_B;
