@@ -2,10 +2,10 @@
 clc; clear;
 
 tic;  % 開始計時
-for i=1:100000
+for i=1:2
 yaw_pitch_roll = [30, 20, -10]*pi/180;
 
-BN = Euler3212C(yaw_pitch_roll); %n frame to b frame;
+BN = Euler3212C(yaw_pitch_roll) %n frame to b frame;
 s_N = [1 0 0]';
 m_N = [0 0 -1]';
 s_B_true = BN*s_N;
@@ -59,6 +59,7 @@ lambda_t = 1;  % 初始值（可以根據實際情況調整）
 tolerance = 1e-6;  % 收斂容忍度
 max_iter = 100;  % 最大迭代次數
 iter = 0;  % 迭代計數器
+old_lambda = 1.0;
 % 牛頓-拉夫森方法迭代
 while iter < max_iter
     % 計算 f(lambda) 和 f'(lambda)
@@ -73,7 +74,7 @@ while iter < max_iter
         break;
     end
 
-    lambda_t = lambda_t1;  % 更新 lambda
+    lambda_t = lambda_t1  % 更新 lambda
     iter = iter + 1;
 end
 
@@ -82,7 +83,7 @@ gamma = (lambda_t + sigma) * alpha - delta;
 beta = lambda_t - sigma;
 X = (alpha * eye(3) + beta * S + S^2)*Z;
 
-beta_max = [X; gamma]/sqrt(gamma^2 + norm(X)^2);
+beta_max = [X; gamma]/sqrt(gamma^2 + norm(X)^2)
 
 barBN = EP2C_q1q2q3q0(beta_max);
 ANS = C2Euler123(barBN)/pi*180;
